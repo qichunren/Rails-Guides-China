@@ -1,60 +1,59 @@
-h2. Getting Started with Engines
+h2. Engine入门
 
-In this guide you will learn about engines and how they can be used to provide additional functionality to their host applications through a clean and very easy-to-use interface. You will learn the following things in this guide:
+在这篇文档指南中，你会学到通过利用Engine， 以一种简洁易用的方式为主Rails应用程序提供额外的功能。你将学到如下的知识点：
 
-* What makes an engine
-* How to generate an engine
-* Building features for the engine
-* Hooking the engine into an application
-* Overriding engine functionality in the application
-
+* Engine的构成
+* 怎么样生成一个Engine
+* 怎么样给Engine添加功能
+* 怎么样将Engine挂进（hook）主应用？
+* 重载Engine的功能
 endprologue.
 
-h3. What are engines?
+h3. Engine是什么？
 
-Engines can be considered miniature applications that provide functionality to their host applications. A Rails application is actually just a "supercharged" engine, with the +Rails::Application+ class inheriting a lot of its behaviour from +Rails::Engine+.
+Engine可以被看作是一个为主Rails应用提供额外功能的小型应用.其实Rails应用程序本身就是一个大号的Engine，其中的 +Rails::Application+ 类就是继承自 +Rails::Engine+ ，它从其中承继了很多东西。
 
-Therefore, engines and applications can be thought of almost the same thing, just with very minor differences, as you'll see throughout this guide. Engines and applications also share a common structure.
+所以，Engine和Application这两个事物大可以被认为是一个东西，只是有一些细微的不同之处，在这篇文档指南会有讲到。Engine和Application都有一个普通的目录结构。
 
-Engines are also closely related to plugins where the two share a common +lib+ directory structure and are both generated using the +rails plugin new+ generator. The difference being that an engine is considered a "full plugin" by Rails -- as indicated by the +--full+ option that's passed to the generator command -- but this guide will refer to them simply as "engines" throughout. An engine *can* be a plugin, and a plugin *can* be an engine.
+Engine和Rails插件也很相像，都有一个常见的lib目录，并且都是可以通过 +rails plugin new+ 命令来生成。它们的不同之处在于Engine可以被认为是一个完全的插件，从它的generator时可以传一个 +--full+ 选项可以看出这一点。但本文档指南中，两者都被作为Engine来对待，Engine可以是插件，插件也可以是Engine。
 
-The engine that will be created in this guide will be called "blorgh". The engine will provide blogging functionality to its host applications, allowing for new posts and comments to be created. At the beginning of this guide, you will be working solely within the engine itself, but in later sections you'll see how to hook it into an application.
+在本文中所要创建的Engine名为“blorgh”。通过这个Engine可以向主Rails应用中添加这样的功能：创建新文章、对文章发评论。在开始阶段，只在Engine中做事，在后面的章节，你会了解到怎么样将前面所做的挂进主应用中去。
 
-Engines can also be isolated from their host applications. This means that an application is able to have a path provided by a routing helper such as +posts_path+ and use an engine also that provides a path also called +posts_path+, and the two would not clash. Along with this, controllers, models and table names are also namespaced. You'll see how to do this later in this guide.
+主应用程序和Engine是分离的，这意味主应用中使用的路由Helper方法同样可以在Engine中使用，如+posts_path+ ，同时它们不会冲突，由此，控制器，模型和表名都是有命令空间的。在后面的章节会有说到。
 
-It's important to keep in mind at all times that the application should *always* take precedence over its engines. An application is the object that has final say in what goes on in the universe (with the universe being the application's environment) where the engine should only be enhancing it, rather than changing it drastically.
+记住这一点很重要：主应用是优先主它的Engine的，主程序整个应用环境中有优先权，这也就是说Engine是为主应用提供辅助的，而不是大幅度改变。
 
-To see demonstrations of other engines, check out "Devise":https://github.com/plataformatec/devise, an engine that provides authentication for its parent applications, or "Forem":https://github.com/radar/forem, an engine that provides forum functionality. There's also "Spree":https://github.com/spree/spree which provides an e-commerce platform, and "RefineryCMS":https://github.com/resolve/refinerycms, a CMS engine.
+以下这些是一些Egnine的例子， "Devise":https://github.com/plataformatec/devise, 它为主应用提供了授权验证的功能。 "Forem":https://github.com/radar/forem, 它是一个论坛Engine。"Spree":https://github.com/spree/spree 是一个电子商务平台的Engine，"RefineryCMS":https://github.com/resolve/refinerycms, 是一个CMS Engine.
 
-Finally, engines would not have be possible without the work of James Adam, Piotr Sarnacki, the Rails Core Team, and a number of other people. If you ever meet them, don't forget to say thanks!
+最后我想说的是,Engine的创建离不开James Adam、 Piotr Sarnacki、Rails核心团队、和其他许多人的工作，如果你遇到他们，不要忘记向他们说声谢谢哦！
 
-h3. Generating an engine
+h3. 生成一个Engine
 
-To generate an engine with Rails 3.1, you will need to run the plugin generator and pass it the +--full+ and +--mountable+ options. To generate the beginnings of the "blorgh" engine you will need to run this command in a terminal:
+在Rails 3.1中生成一个Engine，你需要在运行Plugin generator时传 +--full+ and +--mountable+这两个选项参数。生成“blorgh”Engine，你需要在终端运行如下的命令：
 
 <shell>
 $ rails plugin new blorgh --full --mountable
 </shell>
 
-The +--full+ option tells the plugin generator that you want to create an engine (which is a mountable plugin, hence the option name), creating the basic directory structure of an engine by providing things such as the foundations of an +app+ folder, as well a +config/routes.rb+ file. This generator also provides a file at +lib/blorgh/engine.rb+ which is identical in function to an application's +config/application.rb+ file.
++--full+ 这个选项告诉plugin generator，你想创建一个Engine（Engine就是一个可以绑定的插件嘛），创建了Engine的基本目录结构，如 +app+ 目录、 +config/routes.rb+ 文件，生成器也生成一个 +lib/blorgh/engine.rb+ 这个文件，它和Rails应用中的+config/application.rb+ 作用相当。
 
-The +--mountable+ option tells the generator to mount the engine inside the dummy testing application located at +test/dummy+ inside the engine. It does this by placing this line in to the dummy application's +config/routes.rb+ file, located at +test/dummy/config/routes.rb+ inside the engine:
++--mountable+ 这个选项告诉plugin generator，你想将本Engine绑定测试环境中的application里，这个application位于 +test/dummy+ 中。在 +test/dummy/config/routes.rb+ 文件中有这行代码起到作用：
 
 <ruby>
 mount Blorgh::Engine, :at => "blorgh"
 </ruby>
 
-h4. Inside an engine
+h4. Engine内部
 
-h5. Critical files
+h5. 主要文件
 
-At the root of this brand new engine's directory, lives a +blorgh.gemspec+ file. When you include the engine into the application later on, you will do so with this line in a Rails application's +Gemfile+:
+在刚创建的Engine根目录中有一个名为 +blorgh.gemspec+ 的文件。在后面当你将这个Engine添加你的应用中，需要在主应用中的 +Gemfile+ 文件中加入这行代码：
 
 <ruby>
   gem 'blorgh', :path => "vendor/engines/blorgh"
 </ruby>
 
-By specifying it as a gem within the +Gemfile+, Bundler will load it as such, parsing this +blorgh.gemspec+ file and requiring a file within the +lib+ directory called +lib/blorgh.rb+. This file requires the +blorgh/engine.rb+ file (located at +lib/blorgh/engine.rb+) and defines a base module called +Blorgh+.
+在 +Gemfile+ 中将它指定为一个gem后，Bundler加载时，会解析 +blorgh.gemspec+ 文件，然后会require +lib+ 目录中的blorgh.rb文件。在 +lib/blorgh.rb+ 文件里，require了 +blorgh/engine.rb+ 文件（位于 +lib/blorgh/engine.rb+ ），并定定义了一个名为 +Blorgh+ 的Module。
 
 <ruby>
 require "blorgh/engine"
@@ -63,9 +62,9 @@ module Blorgh
 end
 </ruby>
 
-TIP: Some engines choose to use this file to put global configuration options for their engine. It's a relatively good idea, and so if you're wanting offer configuration options, the file where your engine's +module+ is defined is perfect for that. Place the methods inside the module and you'll be good to go.
+提示: 一些Engine选择在这个文件中定义Engine的全局配置，如果你想提供配置选项时，在你的Engine的module定义的文件这样做是个不错的想法，在module中定义方法，也是不错的。
 
-Within +lib/blorgh/engine.rb+ is the base class for the engine:
+在 +lib/blorgh/engine.rb+ 文件中，定义了一个Engine基础类：
 
 <ruby>
 module Blorgh
@@ -75,7 +74,7 @@ module Blorgh
 end
 </ruby>
 
-By inheriting from the +Rails::Engine+ class, this gem notifies Rails that there's an engine at the specified path, and will correctly mount the engine inside the application, performing tasks such as adding the +app+ directory of the engine to the load path for models, mailers, controllers and views.
+通过继承了 +Rails::Engine+ 类，这个gem告知Rails在指定的路径中有这样的一个Engine，并将其绑进Rails应用中，执行加载Engine中的app目录中的Controller、Model、View等。
 
 The +isolate_namespace+ method here deserves special notice. This call is responsible for isolating the controllers, models, routes and other things into their own namespace, away from similar components inside hte application. Without this, there is a possibility that the engine's components could "leak" into the application, causing unwanted disruption, or that important engine components could be overriden by similarly named things within the application. One of the examples of such conflicts are helpers. Without calling +isolate_namespace+, engine's helpers would be included in application's controllers.
 
@@ -109,7 +108,7 @@ rails g model
 
 Keeping in mind, of course, that anything generated with these commands inside an engine that has +isolate_namespace+ inside the Engine class will be namespaced.
 
-h5. +test+ directory
+h5. +test+ 目录
 
 The +test+ directory is where tests for the engine will go. To test the engine, there is a cut-down version of a Rails application embedded within it at +test/dummy+. This application will mount the engine in the +test/dummy/config/routes.rb+ file:
 
@@ -120,7 +119,7 @@ Rails.application.routes.draw do
 end
 </ruby>
 
-This line mounts the engine at the path of +/blorgh+, which will make it accessible through the application only at that path.
+这一行代码将Engine绑定在 +/blorgh+ 这个路由中，在应用中通过这个路径可以调用到Engine。
 
 Also in the test directory is the +test/integration+ directory, where integration tests for the engine should be placed. Other directories can be created in the +test+ directory also. For example, you may wish to create a +test/unit+ directory for your unit tests.
 
@@ -136,7 +135,7 @@ The first thing to generate for a blog engine is the +Post+ model and related co
 $ rails generate scaffold post title:string text:text
 </shell>
 
-This command will output this information:
+这行命令会生成如下信息:
 
 <shell>
 invoke  active_record
@@ -251,6 +250,7 @@ $ rails generate model Comment post_id:integer text:text
 </shell>
 
 This will output the following:
+输出如下：
 
 <shell>
 invoke  active_record
@@ -324,6 +324,7 @@ $ rails g controller comments
 </shell>
 
 This will generate the following things:
+这条命令会生成以下的文件：
 
 <shell>
 create  app/controllers/blorgh/comments_controller.rb
@@ -387,11 +388,13 @@ $ rails new unicorn
 
 Usually, specifying the engine inside the Gemfile would be done by specifying it as a normal, everyday gem.
 
+通常情况下，在Gemfile文件中指定一个Egnine和指定一个Gem是一样的方法：
+
 <ruby>
 gem 'devise'
 </ruby>
 
-Because the +blorgh+ engine is still under development, it will need to have a +:path+ option for its +Gemfile+ specification:
+由于 +blorgh+ Engine还在开发中，在Gemfile中指定它时，需要传进一个 +:path+ 选项参数：
 
 <ruby>
 gem 'blorgh', :path => "/path/to/blorgh"
@@ -415,20 +418,22 @@ This line will mount the engine at +/blog+ in the application. Making it accessi
 
 NOTE: Other engines, such as Devise, handle this a little differently by making you specify custom helpers such as +devise_for+ in the routes. These helpers do exactly the same thing, mounting pieces of the engines's functionality at a pre-defined path which may be customizable.
 
-h4. Engine setup
+h4. Engine setup Engine的安装
 
 The engine contains migrations for the +blorgh_posts+ and +blorgh_comments+ table which need to be created in the application's database so that the engine's models can query them correctly. To copy these migrations into the application use this command:
+这个Engine中有 +blorgh_posts+ 和 +blorgh_comments+ 数据表的migration文件，Engine中的模型需要用到这两张表。通过执行这个命令将migration文件复制到Rails应用的相应目录中：
 
 <shell>
 $ rake blorgh:install:migrations
 </shell>
 
 If you have multiple engines that need migrations copied over, use +railties:install:migrations+ instead:
-
+如果你有多个Engine的migration文件需要复制出来，可以使用 +railties:install:migrations+ 命令来代替：
 <shell>
 $ rake railties:install:migrations
 </shell>
 
+此命令在初次执行的时候，会将那些Engine中所有的migration文件都复制到Rails应用中。在下次执行这条命令时，只有那些还没有被复制出来的migration文件才会被复制出来。在初次执行此命令时，输出如下：
 This command, when run for the first time will copy over all the migrations from the engine. When run the next time, it will only copy over migrations that haven't been copied over already. The first run for this command will output something such as this:
 
 <shell>
@@ -436,7 +441,7 @@ Copied migration [timestamp_1]_create_blorgh_posts.rb from blorgh
 Copied migration [timestamp_2]_create_blorgh_comments.rb from blorgh
 </shell>
 
-The first timestamp (+\[timestamp_1\]+) will be the current time and the second timestamp (+\[timestamp_2\]+) will be the current time plus a second. The reason for this is so that the migrations for the engine are run after any existing migrations in the application.
+第一个时间戳 (+\[timestamp_1\]+) 是当前的时间，第二次时间戳是在当前的时间戳上加1秒 and the second timestamp (+\[timestamp_2\]+) will be the current time plus a second. The reason for this is so that the migrations for the engine are run after any existing migrations in the application.
 
 To run these migrations within the context of the application, simply run +rake db:migrate+. When accessing the engine through +http://localhost:3000/blog+, the posts will be empty. This is because the table created inside the application is different from the one created within the engine. Go ahead, play around with the newly mounted engine. You'll find that it's the same as when it was only an engine.
 
